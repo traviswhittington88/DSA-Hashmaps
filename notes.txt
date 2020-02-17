@@ -1,0 +1,163 @@
+Working with hash maps
+
+- Hash maps are unordered associations between keys and values
+- Sound familiar to objects in JS? That's because objects are just hash maps with 
+  some additional prototype cleverness!
+
+Key Terms
+
+- Hash map
+- Capacity
+- Collisions
+- Open addressing
+- Separate chaining
+
+Thinking about hash maps
+- Taking an key and using it to narrow results
+  .e.g  meat: { chicken: { drumsticks: 2, thighs: 5 }, beef: { chuck: 2, ground: 2 }, etc. };
+
+Speed
+
+*Hash maps vs linked lists
+
+- Much faster O(1) constant time because we could just check to see if the element was there
+  instead of searching through n nodes in a linked list to find the element
+
+- example of a hash map is a dictionary: the key is the word and the value is the definition..
+
+Terms useful to know in hash maps
+- Hashing: mapping a key to a "position" in a hash table
+- Hash Table: a storage for hash maps, usually implemented using an array where each element in the array holds
+  the key value pair.. e.g. [{ word: definition}, { grocery-store: food }]  <== bad example
+
+  so hash map is the object 
+  hash table is the array that is one of the values of the keys in the hash map.. eg. 
+  
+  {
+    meats: [
+      {
+        chicken: {
+          thighs: 2,
+          drumsticks: 3,
+          wings: 10,
+        },
+      },
+      {
+        beef: {
+          chuck: 3,
+          ground beef: 4,
+        },
+      },
+    ]
+  }
+
+  ^^ this is a guess...
+
+  - Hash Function: maps keys to positions in the hash table.. e.g. const pilfer = function(pilfer) {
+    return 25;  // index of pilfer in hash table
+  }
+    hash functions give us the mapping.. they allow us to skip the rest of the data that
+    isn't the value you want. How do they do this? 
+
+    A good hash function satisfies (approximately) the assumption of uniform hashing, i.e., 
+    each key is equally likely to hash to any of the n number of slots
+
+
+In practice..
+
+1. Assume we have a hash 'table' with size 6.
+2. We want to 'hash' the keys: Hobbit, Wizard, Human, Dwarf.
+3. Will use a hashing function that takes the keys: Hobbit, etc and maps them
+   to a "numeric value" between 0 and 5 (the size of the hash table). 
+4. The hash function _hashString(string) ,e.g. _hashString('Hobbit') or _hashString('Dwarf') ,etc..
+   - uses the ASCII value of the characters in the string, e.g. H = 72, o = 111, b = 98, b = 98, i = 105, t = 116, 
+   - adds them together, e.g. 600. 
+   - uses "other"??? info to get the best distribution in the hash "table", aka array. 
+
+  for example if we use the hash functionin this lesson ?? haven't seen it yet.. , we can find the 
+  numeric equivalent of the strings above and map them to a slot in our hash table.. i.e. and index in an array.
+
+  * Hobbit: 3085073917 % 6  = 1.  The key Hobbit will be hashed (placed) in index (remember its array) 1 of the hash table (arary)
+  * Wizard: 3665850966 % 6 = 0. Will be hashed at index 0.
+
+
+hash table (array) will look something like this
+[ 
+  Wizard: 'Gandalf',  //0
+  Hobbit: 'Frodo',  //1
+  empty slot,  //2
+  empty slot, //3
+  Human: 'Aragon',  //4
+  Dward: 'Gimli' //5
+]
+
+Implementing a hash map (object)
+
+1. setup constructor and hash function
+  1.1. The constructor has an array called _hashTable
+  1.2. hash map has length
+  1.3. hash map has a capacity - grows in chunks when you resize when table is full.. remember lesson 1 array sizing
+  1.4. the MAX_LOAD_RATIO is the heightest that the ratio between the length and the capacity will be allowed to reach
+  1.5. e.g. when 90% of the slots in the hash table (array) are filled... eg 9/10, then resize will take place and we 
+       "will move" to a larger hash table (array). The larger it gets the more data you have to move
+2. the _hashString function takes a string and hashes it , e.g. "Hobbit", outputting a number.  This is the famous 
+   djb2 algorithm.. 
+
+   see HashMaps_drills.js
+
+Collisions
+
+-- 2 unique keys hash to the same slot (index) in the array
+-- You want to hash the key 'Elf' which maps to slot/index 0.. but Wizard is already at 0...
+-- Can't replace values.. that would be losing a key/value pair.. not smart
+
+There are "generally" 2 ways to resolve collisions...
+1. Open addressing
+  - Hash the key, e.g. 'Elf', nearest to where it "should" live '0'. so maybe ? 2? YES!
+
+2. Separate chaining
+  - uses linked lists to hash the keys that run into collision.. 
+  - the first slot contains the pointer to the head of the list.. Hobbit? 
+  - uses next pointers to the the keys ins a linked lists. ..  | this.head | this.first.next | => Hobbit | Hobbit.next | => | Elf | Elf.next |
+
+Adding items to a hash map
+
+Let's write the methods for "locating" the correct slot (index)  for an item and adding the item
+to the hash map (or hash table??)...
+
+We will achieve this by a function called set() and a helper function called _findSlot().
+
+MAX_LOAD_RATIO - keep track of how full the hashmap is..
+but has a couple other benefits.. 
+  * keeps track of capacity
+  * minimizes the chance that a value ends up a long way from its hash position 
+    ** due to the slots being almost totally full..in open addressing  (without separate chaining)
+  * overall it improves the performance of "value retrieval"
+SIZE_RATIO - when the map is a certain % full (90%) we move to a bigger hash table using the SIZE_RATIO.
+             this reduces the number of collisions.
+
+Resizing the hash map
+
+- not really resizing... you are re-creating the hash map with a larger size
+- see _resize in HashMaps_drills.js
+
+
+Deleting items
+
+- tricky with open addressing  
+
+Imagine you have 3 slots and the first 2 are filled 
+Then you add a 3rd item which collides with the 1st.
+This will be placed in the 3rd slot as the 2nd is filled
+If you then delete the 2nd item and try to retrieve the 3rd item it will..
+  look at the 1st slot, find a collission,
+  look at the 2nd slot and see it is empty
+  it will incorrectly decide that there is no value that matches the key
+    why? Maybe because empty signals the end? not sure
+
+- Best solution is to put a DELETED marker in the slot.. 
+- Then on resize you can actually clear out all the deleted items
+- THis means that the hash map loads up slightly more quickly( slowly?? ) but 
+  simplifies the code significantly
+
+  See HashMaps_drills.js
